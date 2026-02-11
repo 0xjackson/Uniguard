@@ -1,5 +1,7 @@
 # UniGuard Documentation - 1st place Eigen Games Uniswap Track
 
+Built at **Eigen Games** with @Oliverpt-1.
+
 ## Introduction
 UniGuard is a specialized developer tool designed to enhance the security and reliability of Uniswap V4 hook contracts. By combining AI-powered testing, security auditing, and decentralized validation through the Othentic stack, UniGuard provides a comprehensive solution for developers working with Uniswap V4 hooks.
 
@@ -21,7 +23,7 @@ UniGuard is a specialized developer tool designed to enhance the security and re
 ```bash
 # No installation required for the web interface - UniGuard is a web-based tool
 # For local development, clone the repository
-git clone https://github.com/Oliverpt-1/Eigen-Games.git
+git clone https://github.com/0xjackson/eigen-games.git
 ```
 
 ### Quick Start

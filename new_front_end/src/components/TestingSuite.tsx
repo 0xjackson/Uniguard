@@ -85,9 +85,9 @@ export function TestingSuite({ contractCode }: { contractCode: string }) {
     // Create an AbortController for timeout
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.log('Request timed out after 30 seconds');
+      console.log('Request timed out after 60 seconds');
       controller.abort();
-    }, 30000); // 30 second timeout
+    }, 60000); // 60 second timeout
     
     console.log('Making fetch request to http://localhost:3001/generate-tests');
     // Make API call to the test generator agent
@@ -127,7 +127,7 @@ export function TestingSuite({ contractCode }: { contractCode: string }) {
         console.log('Error name:', error.name);
         console.log('Error message:', error.message);
         if (error.name === 'AbortError') {
-          setError('Request timed out after 30 seconds. The test generation might be taking too long or the server might be unresponsive.');
+          setError('Request timed out after 60 seconds. The test generation might be taking too long or the server might be unresponsive.');
         } else {
           setError(`Failed to generate tests: ${error.message}`);
         }

@@ -19,6 +19,67 @@ if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 // Path to the template workspace
 const TEMPLATE_DIR = path.join(__dirname, 'template-workspace/v4-template');
 
+// Function to ensure remappings are properly set up
+function ensureRemappings(workspacePath) {
+  // Put more specific remappings first, followed by general ones
+  const remappingsContent = `@uniswap/v4-core/contracts/=lib/v4-core/src/
+@uniswap/v4-periphery/contracts/=lib/v4-periphery/src/
+@uniswap/v4-core/=lib/v4-core/
+@uniswap/v4-periphery/=lib/v4-periphery/
+@openzeppelin/=lib/openzeppelin-contracts/
+forge-std/=lib/forge-std/src/
+v4-core/=lib/v4-core/
+v4-periphery/=lib/v4-periphery/`;
+
+  // Write remappings.txt to ensure Forge can find dependencies
+  fs.writeFileSync(path.join(workspacePath, 'remappings.txt'), remappingsContent);
+  
+  // Also update foundry.toml to include the remappings
+  try {
+    const foundryTomlPath = path.join(workspacePath, 'foundry.toml');
+    if (fs.existsSync(foundryTomlPath)) {
+      let foundryContent = fs.readFileSync(foundryTomlPath, 'utf8');
+      
+      // Check if remappings section exists and update it
+      if (foundryContent.includes('remappings =')) {
+        // Replace remappings section with our comprehensive mappings, specific ones first
+        foundryContent = foundryContent.replace(
+          /remappings\s*=\s*\[[^\]]*\]/s,
+          `remappings = [
+    "@uniswap/v4-core/contracts/=lib/v4-core/src/",
+    "@uniswap/v4-periphery/contracts/=lib/v4-periphery/src/",
+    "@uniswap/v4-core/=lib/v4-core/",
+    "@uniswap/v4-periphery/=lib/v4-periphery/",
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "forge-std/=lib/forge-std/src/",
+    "v4-core/=lib/v4-core/",
+    "v4-periphery/=lib/v4-periphery/"
+]`
+        );
+      } else {
+        // Add remappings section if it doesn't exist
+        foundryContent += `
+remappings = [
+    "@uniswap/v4-core/contracts/=lib/v4-core/src/",
+    "@uniswap/v4-periphery/contracts/=lib/v4-periphery/src/",
+    "@uniswap/v4-core/=lib/v4-core/",
+    "@uniswap/v4-periphery/=lib/v4-periphery/",
+    "@openzeppelin/=lib/openzeppelin-contracts/",
+    "forge-std/=lib/forge-std/src/",
+    "v4-core/=lib/v4-core/",
+    "v4-periphery/=lib/v4-periphery/"
+]`;
+      }
+      
+      fs.writeFileSync(foundryTomlPath, foundryContent);
+    }
+  } catch (error) {
+    console.error(`Error updating foundry.toml: ${error.message}`);
+  }
+  
+  console.log(`✅ Remappings set up properly in ${workspacePath}`);
+}
+
 app.post('/api/compile-and-test', async (req, res) => {
   const { code, testCode } = req.body;
     if (!code || !testCode) return res.status(400).json({ error: 'Missing contract or test code' });
@@ -30,14 +91,31 @@ app.post('/api/compile-and-test', async (req, res) => {
         // Copy template instead of initializing new project
         fs.cpSync(TEMPLATE_DIR, workspace, { recursive: true });
         
-        // Remove template files - use absolute paths to ensure they're removed
+        // Ensure remappings are properly set up
+        ensureRemappings(workspace);
+        
+        // Create a stub Counter.sol file instead of removing it
         const counterSolPath = path.join(workspace, 'src', 'Counter.sol');
         const counterTestPath = path.join(workspace, 'test', 'Counter.t.sol');
         
-        console.log(`Removing ${counterSolPath}`);
-        if (fs.existsSync(counterSolPath)) {
-          fs.unlinkSync(counterSolPath);
-        }
+        console.log(`Replacing ${counterSolPath} with stub`);
+        const stubCounterCode = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Counter {
+    uint256 public number;
+    
+    function setNumber(uint256 newNumber) public {
+        number = newNumber;
+    }
+
+    function increment() public {
+        number++;
+    }
+}`;
+        
+        // Replace original Counter.sol with stub
+        fs.writeFileSync(counterSolPath, stubCounterCode);
         
         console.log(`Removing ${counterTestPath}`);
         if (fs.existsSync(counterTestPath)) {
@@ -102,12 +180,29 @@ app.post('/api/compile-for-deploy', async (req, res) => {
     console.log(`🛠 Creating deployment workspace at ${workspace}`);
     fs.cpSync(TEMPLATE_DIR, workspace, { recursive: true });
     
-    // Remove template files - use absolute paths to ensure they're removed
+    // Ensure remappings are properly set up
+    ensureRemappings(workspace);
+    
+    // Create a stub Counter.sol file instead of removing it
     const counterSolPath = path.join(workspace, 'src', 'Counter.sol');
-    console.log(`Removing ${counterSolPath}`);
-    if (fs.existsSync(counterSolPath)) {
-      fs.unlinkSync(counterSolPath);
+    console.log(`Replacing ${counterSolPath} with stub`);
+    const stubCounterCode = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+contract Counter {
+    uint256 public number;
+    
+    function setNumber(uint256 newNumber) public {
+        number = newNumber;
     }
+
+    function increment() public {
+        number++;
+    }
+}`;
+    
+    // Replace original Counter.sol with stub
+    fs.writeFileSync(counterSolPath, stubCounterCode);
     
     const contractMatch = code.match(/contract\s+(\w+)/);
     console.log("Contract code first 100 chars:", code.substring(0, 100));
